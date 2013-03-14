@@ -1,0 +1,28 @@
+#! /usr/bin/env python
+
+import sys
+import argparse
+import cx_Oracle
+from datetime import datetime, timedelta
+from time import mktime
+
+PERIOD = timedelta(minutes=30)
+
+def connect(rcfile):
+    return cx_Oracle.connect(open(rcfile).read().strip())
+
+def main():
+    p = argparse.ArgumentParser(description='Query fairshare information')
+    p.add_argument('user', help="user or group")
+    # Sub-command:
+    # p.add_argument('find', help="find user or group's hierarchy")
+    args = p.parse_args()
+
+    tsd = opentsdb.OpenTSDB('tsd.example.net')
+    pprint(tsd.tagvalues('/'))
+    r = tsd.query('batchpart.priority{group=/foo/bar/fred}',
+                  t1=mktime((datetime.now() - PERIOD).timetuple()))
+    pprint(r)
+
+if __name__ == '__main__':
+    sys.exit(main())
