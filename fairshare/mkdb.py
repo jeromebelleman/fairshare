@@ -25,15 +25,17 @@ def mktables(args):
     execcreate(c, sql)
 
     # User tables
+    # Maybe I want a PK on id and an INDEX/UNIQQUE on username
     cols = 'id NUMBER(7) UNIQUE', 'username VARCHAR2(256)', \
            'CONSTRAINT pk_users_username PRIMARY KEY (username)'
     sql = "CREATE TABLE users (%s)" % ', '.join(cols)
     execcreate(c, sql)
 
     # Stat tables
-    cols = 'timestamp DATE, id NUMBER(7)', 'shares NUMBER(7)', \
+    cols = 'id NUMBER(7)', 'timestamp DATE', 'shares NUMBER(7)', \
            'priority NUMBER(9,3)', 'started NUMBER(7)', 'cpu NUMBER(12,1)', \
-           'wall NUMBER(11)'
+           'wall NUMBER(11)', \
+           'CONSTRAINT pk_shares_id_timestamp PRIMARY KEY (id, timestamp)'
     sql = "CREATE TABLE shares (%s)" % ', '.join(cols)
     execcreate(c, sql)
 

@@ -2,6 +2,7 @@
 
 import sys
 import pylsf
+from datetime import datetime
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import fairshare
 
@@ -27,7 +28,10 @@ def collect(args):
                 userdata[USERDATALEN * i + 0:USERDATALEN * i + 7]
 
             # Collect data
-            users.append({'u': user})
+            d = {'u': user, 't': datetime.now(), 'shares': shares,
+                 'priority': priority, 'started': started, 'cpu': cpu,
+                 'wall': wall}
+            users.append(d)
 
             i += 1
     except ValueError:
@@ -35,11 +39,21 @@ def collect(args):
         pass
 
     # DB statement
-    # Not particularly quick:
+    # IGNORE_ROW_ON_DUPKEY_INDEX not particularly quick:
     # http://guyharrison.squarespace.com/blog/2010/1/1/the-11gr2-ignore_row_on_dupkey_index-hint.html
-    ins = "INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(users, pk_users_username) */"
-    into = " INTO users (id, username) VALUES (seq_users.nextval, :u)"
-    sql = ins + into
+    # Reuse nextval: http://dba.stackexchange.com/questions/2978
+    sql = '''\
+DECLARE
+    id NUMBER(7);
+BEGIN
+    id := seq_users.nextval;
+    INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(users, pk_users_username) */
+    INTO users (id, username) VALUES (id, :u);
+
+    INSERT INTO shares (id, timestamp, shares, priority, started, cpu, wall)
+    VALUES (id, :t, :shares, :priority, :started, :cpu, :wall);
+END;'''
+
     c.executemany(sql, users)
     connection.commit() # Yes, needed
 
