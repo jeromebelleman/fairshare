@@ -29,12 +29,15 @@ def collect(args):
     # Run PyLSF 
     rc = pylsf.lsb_init()
     if rc != 0:
-        raise Exception(pylsf.lsb_sysmsg())
+        logging.error(pylsf.lsb_sysmsg())
+        return 1
 
     t0 = time()
     (_, _, userdata), = pylsf.lsb_hostpartinfo([PART])
-    logging.info("Queried from LSF in %.2f s" % (time() - t0))
+    logging.info("Retrieved %d groups from LSF in %.2f s" % \
+                 (len(userdata) / 7, time() - t0))
 
+    t = datetime.now()
     users = []
     try:
         i = 0
@@ -44,9 +47,8 @@ def collect(args):
                 userdata[USERDATALEN * i + 0:USERDATALEN * i + 7]
 
             # Collect data
-            d = {'u': user, 't': datetime.now(), 'shares': shares,
-                 'priority': priority, 'started': started, 'cpu': cpu,
-                 'wall': wall}
+            d = {'u': user, 't': t, 'shares': shares, 'priority': priority,
+                 'started': started, 'cpu': cpu, 'wall': wall}
             users.append(d)
 
             i += 1
@@ -55,13 +57,12 @@ def collect(args):
         pass
 
     # Insert new share values
-    # http://guyharrison.squarespace.com/blog/2010/1/1/the-11gr2-ignore_row_on_dupkey_index-hint.html
-    # Reuse nextval: http://dba.stackexchange.com/questions/2978
     insert = '''\
     INSERT INTO shares (id, timestamp, shares, priority, started, cpu, wall)
     VALUES (id, :t, :shares, :priority, :started, :cpu, :wall);'''
 
-
+    # http://guyharrison.squarespace.com/blog/2010/1/1/the-11gr2-ignore_row_on_dupkey_index-hint.html
+    # Reuse nextval: http://dba.stackexchange.com/questions/2978
     sql = '''\
 DECLARE
     id NUMBER(7);
@@ -80,19 +81,19 @@ END;''' % ((insert,) * 2)
     t0 = time()
     c.executemany(sql, users)
     logging.info("Inserted %d records to DB in %.2f s" % \
-        (c.rowcount, time() - t0))
+                 (c.rowcount, time() - t0))
 
     # Clean up old data
     sql = 'DELETE FROM shares WHERE timestamp < :t'
     t0 = time()
     c.execute(sql, [datetime.now() - timedelta(args.delete)])
     logging.info("Deleted %d records from DB in %.2f s" % \
-        (c.rowcount, time() - t0))
+                 (c.rowcount, time() - t0))
 
     # Commit
     t0 = time()
     connection.commit() # Yes, needed
-    logging.info("Committed changes in DB in %.2f s" % (time() - t0))
+    logging.info("Committed changes to DB in %.2f s" % (time() - t0))
 
 def main():
     p = ArgumentParser(description="Modify fairshare DB",

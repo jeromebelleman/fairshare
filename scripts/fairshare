@@ -8,21 +8,64 @@ from time import mktime
 
 PERIOD = timedelta(minutes=30)
 
-def connect(rcfile):
-    return cx_Oracle.connect(open(rcfile).read().strip())
+TIMEW = 10
+
+def connect(config):
+    return cx_Oracle.connect(open(config).read().strip())
+
+def find(args):
+    # Connect to DB
+    connection = connect(args.config)
+    c = connection.cursor()
+
+    # Query
+    sql = "SELECT username FROM users WHERE username LIKE :u"
+    c.execute(sql, ['%' + args.user + '%'])
+
+    for username, in c:
+        print username
+
+def shares(args):
+    # Connect to DB
+    connection = connect(args.config)
+    c = connection.cursor()
+
+    # Query
+    select = "SELECT timestamp, priority, cpu FROM users NATURAL JOIN shares"
+    where = " WHERE username = :u ORDER BY timestamp"
+    sql = select + where
+    c.execute(sql, [args.user])
+
+    table(c)
+    # for timestamp, priority, cpu in c:
+        # print timestamp, priority, cpu
+
+def table(cursor):
+    print "%% %ds" % TIMEW % "TIMESTAMP"
+    for row in cursor:
+        for col in row:
+            print 
 
 def main():
+    # Arguments
     p = argparse.ArgumentParser(description='Query fairshare information')
-    p.add_argument('user', help="user or group")
-    # Sub-command:
-    # p.add_argument('find', help="find user or group's hierarchy")
-    args = p.parse_args()
+    p.add_argument('-c', '--config', help="config file",
+                   default='/etc/fairshare')
 
-    tsd = opentsdb.OpenTSDB('tsd.example.net')
-    pprint(tsd.tagvalues('/'))
-    r = tsd.query('batchpart.priority{group=/foo/bar/fred}',
-                  t1=mktime((datetime.now() - PERIOD).timetuple()))
-    pprint(r)
+    s = p.add_subparsers()
+
+    # Find sub-command
+    pfi = s.add_parser('find', help="find user or group")
+    pfi.add_argument('user', help="user or group")
+    pfi.set_defaults(func=find)
+
+    # Shares sub-command
+    psh = s.add_parser('shares', help="print user's share values over time")
+    psh.add_argument('user', help="user or group")
+    psh.set_defaults(func=shares)
+
+    args = p.parse_args()
+    args.func(args)
 
 if __name__ == '__main__':
     sys.exit(main())
