@@ -20,14 +20,14 @@ def mktables(args):
 
     # Auto increment
     create = "CREATE SEQUENCE seq_users"
-    seq = " MINVALUE 1 START WITH 1 INCREMENT BY 1 CACHE 100"
+    seq = " MINVALUE 1 START WITH 1 INCREMENT BY 1 CACHE 1000"
     sql = create + seq
     execcreate(c, sql)
 
     # User tables
-    # Maybe I want a PK on id and an INDEX/UNIQQUE on username
-    cols = 'id NUMBER(7) UNIQUE', 'username VARCHAR2(256)', \
-           'CONSTRAINT pk_users_username PRIMARY KEY (username)'
+    cols = 'id NUMBER(7)', 'username VARCHAR2(256)', \
+           'CONSTRAINT pk_users_id PRIMARY KEY (id)', \
+           'CONSTRAINT un_users_username UNIQUE (username)'
     sql = "CREATE TABLE users (%s)" % ', '.join(cols)
     execcreate(c, sql)
 
