@@ -2,6 +2,7 @@
 
 import sys
 import pylsf
+from time import time
 from datetime import datetime
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import fairshare
@@ -17,7 +18,9 @@ def collect(args):
     if rc != 0:
         raise Exception(pylsf.lsb_sysmsg())
 
+    t0 = time()
     (_, _, userdata), = pylsf.lsb_hostpartinfo([PART])
+    print "Queried from LSF in %.2f s" % (time() - t0)
 
     users = []
     try:
@@ -39,23 +42,30 @@ def collect(args):
         pass
 
     # DB statement
-    # IGNORE_ROW_ON_DUPKEY_INDEX not particularly quick:
     # http://guyharrison.squarespace.com/blog/2010/1/1/the-11gr2-ignore_row_on_dupkey_index-hint.html
     # Reuse nextval: http://dba.stackexchange.com/questions/2978
     sql = '''\
 DECLARE
+    c NUMBER(7);
     id NUMBER(7);
 BEGIN
-    id := seq_users.nextval;
-    INSERT /*+ IGNORE_ROW_ON_DUPKEY_INDEX(users, pk_users_username) */
-    INTO users (id, username) VALUES (id, :u);
+    SELECT COUNT(*) INTO c FROM users WHERE username = :u;
+
+    IF (c = 0) THEN
+        id := seq_users.nextval;
+        INSERT INTO users (id, username) VALUES (id, :u);
+    ELSE
+        SELECT id INTO id FROM users WHERE username = :u;
+    END IF;
 
     INSERT INTO shares (id, timestamp, shares, priority, started, cpu, wall)
     VALUES (id, :t, :shares, :priority, :started, :cpu, :wall);
 END;'''
 
+    t0 = time()
     c.executemany(sql, users)
     connection.commit() # Yes, needed
+    print "Inserted to DB in %.2f s" % (time() - t0)
 
 def main():
     p = ArgumentParser(description="Modify fairshare DB",
