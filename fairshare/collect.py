@@ -85,7 +85,7 @@ END;''' % ((insert,) * 2)
     # Clean up old data
     sql = 'DELETE FROM shares WHERE timestamp < :t'
     t0 = time()
-    c.execute(sql, [datetime.now() - timedelta(10)])
+    c.execute(sql, [datetime.now() - timedelta(args.delete)])
     logging.info("Deleted %d records from DB in %.2f s" % \
         (c.rowcount, time() - t0))
 
@@ -101,6 +101,8 @@ def main():
                    default='/etc/fairshare')
     p.add_argument('-l', '--log', help="log file",
                    default='/var/log/fairshare.log')
+    p.add_argument('-d', '--delete', metavar='N',
+                   help="delete data older than N days", type=int, default=10)
     s = p.add_subparsers()
     pmk = s.add_parser('collect', help="Collect users and their stats")
     pmk.set_defaults(func=collect)
