@@ -42,25 +42,26 @@ def collect(args):
         pass
 
     # DB statement
+    insert = '''\
+    INSERT INTO shares (id, timestamp, shares, priority, started, cpu, wall)
+    VALUES (id, :t, :shares, :priority, :started, :cpu, :wall);'''
+
     # http://guyharrison.squarespace.com/blog/2010/1/1/the-11gr2-ignore_row_on_dupkey_index-hint.html
     # Reuse nextval: http://dba.stackexchange.com/questions/2978
     sql = '''\
 DECLARE
-    c NUMBER(7);
     id NUMBER(7);
 BEGIN
-    SELECT COUNT(*) INTO c FROM users WHERE username = :u;
+    SELECT id INTO id FROM users WHERE username = :u;
 
-    IF (c = 0) THEN
-        id := seq_users.nextval;
-        INSERT INTO users (id, username) VALUES (id, :u);
-    ELSE
-        SELECT id INTO id FROM users WHERE username = :u;
-    END IF;
+%s
+EXCEPTION WHEN no_data_found THEN
+    id := seq_users.nextval;
 
-    INSERT INTO shares (id, timestamp, shares, priority, started, cpu, wall)
-    VALUES (id, :t, :shares, :priority, :started, :cpu, :wall);
-END;'''
+    INSERT INTO users (id, username) VALUES (id, :u);
+
+%s
+END;''' % ((insert,) * 2)
 
     t0 = time()
     c.executemany(sql, users)
