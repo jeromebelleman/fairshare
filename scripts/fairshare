@@ -23,7 +23,7 @@ def find(args):
 
     # Query
     sql = "SELECT username FROM users WHERE username LIKE :u"
-    c.execute(sql, ['%' + args.group])
+    c.execute(sql, ['%' + args.user])
 
     for username, in c:
         print username
@@ -36,10 +36,11 @@ def shares(args):
     # Query
     select = "SELECT timestamp, priority, started, cpu"
     tables = " FROM users NATURAL JOIN shares"
-    where = " WHERE username = :u ORDER BY timestamp"
+    where = " WHERE username = :u AND timestamp > :t ORDER BY timestamp"
     sql = select + tables + where
-    c.execute(sql, [args.group])
-    table(c, args.group)
+    print sql
+    c.execute(sql, [args.group, datetime.now() - timedelta(hours=args.ago)])
+    table(c, args.group, '    ')
 
     # Print user's group hierarchy share values
     if args.recursive:
@@ -48,10 +49,12 @@ def shares(args):
             group = '/'.join(hierarchy[:-i])
             c.execute(sql, [group])
             print
-            table(c, group)
+            table(c, group, '    ')
 
-def table(cursor, group):
-    def header(cursor):
+def table(cursor, group, indent=None):
+    def header(cursor, indent):
+        if indent:
+            print indent,
         for c, _, _, _, _, _, _ in cursor.description:
             print c + ' ' * (COLS[c] - len(c) + 1),
         print
@@ -60,16 +63,18 @@ def table(cursor, group):
     print group + ':\n'
 
     # Header
-    header(cursor)
+    header(cursor, indent)
 
     # Values
     for row in cursor:
+        if indent:
+            print indent,
         for col, (c, _, _, _, _, _, _) in zip(row, cursor.description):
             print str(col) + ' ' * (COLS[c] - len(str(col)) + 1),
         print
 
     # Footer
-    header(cursor)
+    header(cursor, indent)
 
 def main():
     # Arguments
@@ -119,6 +124,8 @@ again.'''
     psh.add_argument('group', help="charged group")
     help = "recursively print all user's parent groups share values too"
     psh.add_argument('-r', '--recursive', action='store_true', help=help)
+    psh.add_argument('-a', '--ago', metavar='N', type=int, default=2,
+                     help="display share values after N hours ago")
     psh.set_defaults(func=shares)
 
     args = p.parse_args()
