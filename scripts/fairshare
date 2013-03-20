@@ -34,11 +34,10 @@ def shares(args):
     c = connection.cursor()
 
     # Query
-    select = "SELECT timestamp, priority, started, cpu"
-    tables = " FROM users NATURAL JOIN shares"
-    where = " WHERE username = :u AND timestamp > :t ORDER BY timestamp"
-    sql = select + tables + where
-    print sql
+    select = "SELECT timestamp, priority, started, cpu FROM shares"
+    sub = " WHERE id = (SELECT id FROM users WHERE username = :u)"
+    timestamp = " AND timestamp > :t ORDER BY timestamp"
+    sql = select + sub + timestamp
     c.execute(sql, [args.group, datetime.now() - timedelta(hours=args.ago)])
     table(c, args.group, '    ')
 
