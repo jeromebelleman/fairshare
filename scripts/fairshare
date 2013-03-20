@@ -6,9 +6,12 @@ import cx_Oracle
 from datetime import datetime, timedelta
 from time import mktime
 
-PERIOD = timedelta(minutes=30)
-
-TIMEW = 10
+COLS = { 'TIMESTAMP': 19,
+         'PRIORITY': 10, # 9 + 1 for the comma
+         'CPU': 13, # 12 + 1 for the comma
+         'STARTED': 7,
+         'WALL': 11,
+       }
 
 def connect(config):
     return cx_Oracle.connect(open(config).read().strip())
@@ -20,7 +23,7 @@ def find(args):
 
     # Query
     sql = "SELECT username FROM users WHERE username LIKE :u"
-    c.execute(sql, ['%' + args.user + '%'])
+    c.execute(sql, ['%' + args.user])
 
     for username, in c:
         print username
@@ -31,20 +34,25 @@ def shares(args):
     c = connection.cursor()
 
     # Query
-    select = "SELECT timestamp, priority, cpu FROM users NATURAL JOIN shares"
+    select = "SELECT timestamp, priority, started, cpu"
+    tables = " FROM users NATURAL JOIN shares"
     where = " WHERE username = :u ORDER BY timestamp"
-    sql = select + where
+    sql = select + tables + where
     c.execute(sql, [args.user])
 
     table(c)
-    # for timestamp, priority, cpu in c:
-        # print timestamp, priority, cpu
 
 def table(cursor):
-    print "%% %ds" % TIMEW % "TIMESTAMP"
+    # Headers
+    for c, _, _, _, _, _, _ in cursor.description:
+        print c + ' ' * (COLS[c] - len(c) + 1),
+    print
+
+    # Values
     for row in cursor:
-        for col in row:
-            print 
+        for col, (c, _, _, _, _, _, _) in zip(row, cursor.description):
+            print str(col) + ' ' * (COLS[c] - len(str(col)) + 1),
+        print
 
 def main():
     # Arguments
