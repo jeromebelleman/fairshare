@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import sys
-import argparse
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import cx_Oracle
 from datetime import datetime, timedelta
 from time import mktime
@@ -56,20 +56,50 @@ def table(cursor):
 
 def main():
     # Arguments
-    p = argparse.ArgumentParser(description='Query fairshare information')
+    epilogue='''\
+You would typically search a given user's charged group first:
+% fairshare find fred
+SHARE/XX/foo/fred
+SHARE/XX/bar/fred
+
+You could then list his share values over time for on of his give groups:
+% fairshare shares SHARE/XX/bar/fred
+TIMESTAMP            PRIORITY    STARTED  CPU           
+2013-03-20 13:20:00  0.333       0        0.0           
+2013-03-20 13:30:00  0.333       0        0.0           
+2013-03-20 13:40:00  0.333       0        0.0           
+2013-03-20 13:50:00  0.047       6        622.0         
+2013-03-20 14:00:00  0.312       0        1029.7        
+2013-03-20 14:10:00  0.312       0        1029.7        
+2013-03-20 14:20:00  0.313       0        1006.2        
+2013-03-20 14:30:00  0.313       0        982.3         
+2013-03-20 14:40:00  0.313       0        982.3         
+2013-03-20 14:50:00  0.314       0        959.0         
+2013-03-20 15:00:00  0.314       0        936.3
+
+Here, the user didn't have any job dispatched until 13:50 when 6 started. His
+priority consequently decreased and his cumulative CPU usage increased. At
+14:00, all of his jobs finished and his cumulative CPU usage, which had reached
+a certain amount, subsequently started to decrease and his priority increase
+again.'''
+
+    p = ArgumentParser(description='Query fairshare information',
+                       epilog=epilogue,
+                       formatter_class=RawDescriptionHelpFormatter)
     p.add_argument('-c', '--config', help="config file",
                    default='/etc/fairshare')
 
     s = p.add_subparsers()
 
     # Find sub-command
-    pfi = s.add_parser('find', help="find user or group")
-    pfi.add_argument('user', help="user or group")
+    pfi = s.add_parser('find', help="find user's charged group")
+    pfi.add_argument('user', help="username")
     pfi.set_defaults(func=find)
 
     # Shares sub-command
-    psh = s.add_parser('shares', help="print user's share values over time")
-    psh.add_argument('user', help="user or group")
+    psh = s.add_parser('shares',
+                       help="print user's charged group share values over time")
+    psh.add_argument('user', help="charged group")
     psh.set_defaults(func=shares)
 
     args = p.parse_args()
