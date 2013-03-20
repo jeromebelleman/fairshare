@@ -23,7 +23,7 @@ def find(args):
 
     # Query
     sql = "SELECT username FROM users WHERE username LIKE :u"
-    c.execute(sql, ['%' + args.user])
+    c.execute(sql, ['%' + args.group])
 
     for username, in c:
         print username
@@ -38,21 +38,38 @@ def shares(args):
     tables = " FROM users NATURAL JOIN shares"
     where = " WHERE username = :u ORDER BY timestamp"
     sql = select + tables + where
-    c.execute(sql, [args.user])
+    c.execute(sql, [args.group])
+    table(c, args.group)
 
-    table(c)
+    # Print user's group hierarchy share values
+    if args.recursive:
+        hierarchy = args.group.split('/')
+        for i in range(1, len(hierarchy) - 1):
+            group = '/'.join(hierarchy[:-i])
+            c.execute(sql, [group])
+            print
+            table(c, group)
 
-def table(cursor):
-    # Headers
-    for c, _, _, _, _, _, _ in cursor.description:
-        print c + ' ' * (COLS[c] - len(c) + 1),
-    print
+def table(cursor, group):
+    def header(cursor):
+        for c, _, _, _, _, _, _ in cursor.description:
+            print c + ' ' * (COLS[c] - len(c) + 1),
+        print
+
+    # Print group name
+    print group + ':\n'
+
+    # Header
+    header(cursor)
 
     # Values
     for row in cursor:
         for col, (c, _, _, _, _, _, _) in zip(row, cursor.description):
             print str(col) + ' ' * (COLS[c] - len(str(col)) + 1),
         print
+
+    # Footer
+    header(cursor)
 
 def main():
     # Arguments
@@ -65,17 +82,17 @@ SHARE/XX/bar/fred
 You could then list his share values over time for on of his give groups:
 % fairshare shares SHARE/XX/bar/fred
 TIMESTAMP            PRIORITY    STARTED  CPU           
-2013-03-20 13:20:00  0.333       0        0.0           
-2013-03-20 13:30:00  0.333       0        0.0           
-2013-03-20 13:40:00  0.333       0        0.0           
-2013-03-20 13:50:00  0.047       6        622.0         
-2013-03-20 14:00:00  0.312       0        1029.7        
-2013-03-20 14:10:00  0.312       0        1029.7        
-2013-03-20 14:20:00  0.313       0        1006.2        
-2013-03-20 14:30:00  0.313       0        982.3         
-2013-03-20 14:40:00  0.313       0        982.3         
-2013-03-20 14:50:00  0.314       0        959.0         
-2013-03-20 15:00:00  0.314       0        936.3
+1984-06-04 13:20:00  0.333       0        0.0           
+1984-06-04 13:30:00  0.333       0        0.0           
+1984-06-04 13:40:00  0.333       0        0.0           
+1984-06-04 13:50:00  0.047       6        622.0         
+1984-06-04 14:00:00  0.312       0        1029.7        
+1984-06-04 14:10:00  0.312       0        1029.7        
+1984-06-04 14:20:00  0.313       0        1006.2        
+1984-06-04 14:30:00  0.313       0        982.3         
+1984-06-04 14:40:00  0.313       0        982.3         
+1984-06-04 14:50:00  0.314       0        959.0         
+1984-06-04 15:00:00  0.314       0        936.3
 
 Here, the user didn't have any job dispatched until 13:50 when 6 started. His
 priority consequently decreased and his cumulative CPU usage increased. At
@@ -93,13 +110,15 @@ again.'''
 
     # Find sub-command
     pfi = s.add_parser('find', help="find user's charged group")
-    pfi.add_argument('user', help="username")
+    pfi.add_argument('user', help="user name")
     pfi.set_defaults(func=find)
 
     # Shares sub-command
     psh = s.add_parser('shares',
                        help="print user's charged group share values over time")
-    psh.add_argument('user', help="charged group")
+    psh.add_argument('group', help="charged group")
+    help = "recursively print all user's parent groups share values too"
+    psh.add_argument('-r', '--recursive', action='store_true', help=help)
     psh.set_defaults(func=shares)
 
     args = p.parse_args()
