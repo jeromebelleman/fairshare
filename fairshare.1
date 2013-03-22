@@ -1,0 +1,89 @@
+.TH FAIRSHARE 1 "MARCH 2013" CERN "Batch Tools"
+
+.SH NAME
+
+fairshare \- Query LSF fairshare information
+
+.SH SYNOPSIS
+
+\fBfairshare [-h] [-c \fICONFIG\fB] {find,shares} ...
+
+\fBfairshare find [-h] \fIuser
+
+\fBfairshare shares [-h] [-r] [-a \fIN\fB] \fIgroup
+
+.SH EXAMPLE
+
+You would typically search a given user's charged group first:
+
+.nf
+% fairshare find fred
+SHARE/XX/foo/fred
+SHARE/XX/bar/fred
+.fi
+
+You could then list his share values over time for on of his give groups:
+
+.nf
+% fairshare shares SHARE/XX/bar/fred
+SHARE/XX/bar/fred:
+
+    TIMESTAMP            PRIORITY    STARTED  CPU           
+    1984-06-04 13:20:00  0.333       0        0.0           
+    1984-06-04 13:30:00  0.333       0        0.0           
+    1984-06-04 13:40:00  0.333       0        0.0           
+    1984-06-04 13:50:00  0.047       6        622.0         
+    1984-06-04 14:00:00  0.312       0        1029.7        
+    1984-06-04 14:10:00  0.312       0        1029.7        
+    1984-06-04 14:20:00  0.313       0        1006.2        
+    1984-06-04 14:30:00  0.313       0        982.3         
+    1984-06-04 14:40:00  0.313       0        982.3         
+    1984-06-04 14:50:00  0.314       0        959.0         
+    1984-06-04 15:00:00  0.314       0        936.3
+    TIMESTAMP            PRIORITY    STARTED  CPU           
+.fi
+
+Here, the user didn't have any job dispatched until 13:50 when 6\~started. His
+priority consequently decreased and his cumulative CPU usage increased. At
+14:00, all of his jobs finished and his cumulative CPU usage, which had reached
+a certain amount, subsequently started to decrease and his priority increase
+again.
+
+.SH COMMON OPTIONS
+
+.TP
+\fB-h\fR, \fB--help
+Show a help message and exit.
+
+.TP
+\fB-c \fICONFIG\fB\fR, \fB--config \fICONFIG
+Use \fICONFIG\fR as a config file which, for the time being, is only supposed
+to be a single line specifying an Oracle connection string along the lines
+of \fIusername/password@dsn\fR.
+
+.SH FIND SUB-COMMAND
+
+Find the charged groups a given \fIuser\fR belongs to:
+
+\fBfairshare find [-h] \fIuser
+
+.SH SHARES SUB-COMMAND
+
+Print the share values of a user's charged \fIgroup\fR over time:
+
+\fBfairshare shares [-h] [-r] [-a \fIN\fB] \fIgroup
+
+.TP
+\fB-r\fR, \fB--recursive
+Recursively print all the share values of the user's parent groups. Sometimes,
+users don't see their jobs dispatched not because their priority is too low,
+but because the priority of one of the groups they belong to (directly or
+indirectly). This options helps identify these cases.
+
+.TP
+\fB-a \fIN\fR, \fB--ago \fIN
+Display share values after N hours ago (default: 2).
+
+.SH AUTHOR
+
+Jérôme Belleman <Jerome.Belleman@cern.ch>
