@@ -22,10 +22,8 @@ def find(args):
     c = connection.cursor()
 
     # Query
-    sql = "SELECT username FROM users WHERE username LIKE :u"
-    c.execute(sql, ['%' + args.user])
-
-    for username, in c:
+    _, usernames = c.callproc('find', (args.user, c.var(cx_Oracle.CURSOR)))
+    for username, in usernames:
         print username
 
 def shares(args):

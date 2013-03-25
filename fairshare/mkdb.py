@@ -43,6 +43,15 @@ def mktables(args):
     sql = "CREATE INDEX ix_shares_timestamp ON shares (timestamp)"
     execcreate(c, sql)
 
+    # Procedures
+    sql = '''\
+CREATE PROCEDURE find (u VARCHAR2, c OUT sys_refcursor)
+IS
+BEGIN
+    OPEN c FOR SELECT username FROM users WHERE username LIKE '%' || u;
+END;'''
+    execcreate(c, sql)
+
 def main():
     p = ArgumentParser(description="Modify fairshare DB",
                        formatter_class=ArgumentDefaultsHelpFormatter)
