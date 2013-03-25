@@ -75,35 +75,7 @@ def table(cursor, group, indent=None):
 
 def main():
     # Arguments
-    epilogue='''\
-You would typically search a given user's charged group first:
-% fairshare find fred
-SHARE/XX/foo/fred
-SHARE/XX/bar/fred
-
-You could then list his share values over time for on of his give groups:
-% fairshare shares SHARE/XX/bar/fred
-TIMESTAMP            PRIORITY    STARTED  CPU           
-1984-06-04 13:20:00  0.333       0        0.0           
-1984-06-04 13:30:00  0.333       0        0.0           
-1984-06-04 13:40:00  0.333       0        0.0           
-1984-06-04 13:50:00  0.047       6        622.0         
-1984-06-04 14:00:00  0.312       0        1029.7        
-1984-06-04 14:10:00  0.312       0        1029.7        
-1984-06-04 14:20:00  0.313       0        1006.2        
-1984-06-04 14:30:00  0.313       0        982.3         
-1984-06-04 14:40:00  0.313       0        982.3         
-1984-06-04 14:50:00  0.314       0        959.0         
-1984-06-04 15:00:00  0.314       0        936.3
-
-Here, the user didn't have any job dispatched until 13:50 when 6 started. His
-priority consequently decreased and his cumulative CPU usage increased. At
-14:00, all of his jobs finished and his cumulative CPU usage, which had reached
-a certain amount, subsequently started to decrease and his priority increase
-again.'''
-
     p = ArgumentParser(description='Query fairshare information',
-                       epilog=epilogue,
                        formatter_class=RawDescriptionHelpFormatter)
     p.add_argument('-c', '--config', help="config file",
                    default='/etc/fairshare')
