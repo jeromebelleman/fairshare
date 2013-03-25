@@ -22,7 +22,7 @@ def find(args):
     c = connection.cursor()
 
     # Query
-    _, usernames = c.callproc('find', (args.user, c.var(cx_Oracle.CURSOR)))
+    _, usernames = c.callproc('findusers', (args.user, c.var(cx_Oracle.CURSOR)))
     for username, in usernames:
         print username
 
@@ -31,22 +31,22 @@ def shares(args):
     connection = connect(args.config)
     c = connection.cursor()
 
+    def findshares(c, group, ago):
+        _, _, shares = c.callproc('findshares',
+                                  (group, datetime.now() - timedelta(hours=ago),
+                                   c.var(cx_Oracle.CURSOR)))
+        return shares
+
     # Query
-    select = "SELECT timestamp, priority, started, cpu FROM shares"
-    sub = " WHERE id = (SELECT id FROM users WHERE username = :u)"
-    timestamp = " AND timestamp > :t ORDER BY timestamp"
-    sql = select + sub + timestamp
-    c.execute(sql, [args.group, datetime.now() - timedelta(hours=args.ago)])
-    table(c, args.group, '    ')
+    table(findshares(c, args.group, args.ago), args.group, '    ')
 
     # Print user's group hierarchy share values
     if args.recursive:
         hierarchy = args.group.split('/')
         for i in range(1, len(hierarchy) - 1):
             group = '/'.join(hierarchy[:-i])
-            c.execute(sql, [group])
             print
-            table(c, group, '    ')
+            table(findshares(c, group, args.ago), group, '    ')
 
 def table(cursor, group, indent=None):
     def header(cursor, indent):

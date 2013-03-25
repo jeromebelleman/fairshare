@@ -45,10 +45,20 @@ def mktables(args):
 
     # Procedures
     sql = '''\
-CREATE PROCEDURE find (u VARCHAR2, c OUT sys_refcursor)
+CREATE PROCEDURE findusers (u VARCHAR2, c OUT sys_refcursor)
 IS
 BEGIN
     OPEN c FOR SELECT username FROM users WHERE username LIKE '%' || u;
+END;'''
+    execcreate(c, sql)
+
+    sql = '''\
+CREATE PROCEDURE findshares (u VARCHAR2, t DATE, c OUT sys_refcursor)
+IS
+BEGIN
+    OPEN c FOR SELECT timestamp, priority, started, cpu FROM shares
+    WHERE id = (SELECT id FROM users WHERE username = u)
+    AND timestamp > t ORDER BY timestamp;
 END;'''
     execcreate(c, sql)
 
