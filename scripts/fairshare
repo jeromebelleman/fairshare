@@ -22,7 +22,8 @@ def find(args):
     c = connection.cursor()
 
     # Query
-    _, usernames = c.callproc('findusers', (args.user, c.var(cx_Oracle.CURSOR)))
+    _, usernames = c.callproc('batch_shares.findusers',
+                              (args.user, c.var(cx_Oracle.CURSOR)))
     for username, in usernames:
         print username
 
@@ -32,7 +33,7 @@ def shares(args):
     c = connection.cursor()
 
     def findshares(c, group, ago):
-        _, _, shares = c.callproc('findshares',
+        _, _, shares = c.callproc('batch_shares.findshares',
                                   (group, datetime.now() - timedelta(hours=ago),
                                    c.var(cx_Oracle.CURSOR)))
         return shares
