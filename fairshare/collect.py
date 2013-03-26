@@ -13,10 +13,22 @@ import fairshare
 PART = 'SHARE'
 USERDATALEN = 7
 
+class Stdout:
+    def write(self, s):
+        if s != '\n':
+            logging.warning(s)
+
+class Stderr:
+    def write(self, s):
+        if s != '\n':
+            logging.error(s)
+
 def collect(args):
     # Set up logging
     logging.basicConfig(filename=args.log, level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s")
+    sys.stdout = Stdout()
+    sys.stderr = Stderr()
 
     # Connect to DB
     try:
