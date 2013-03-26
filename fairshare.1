@@ -14,7 +14,7 @@ fairshare \- Query LSF fairshare information
 
 .SH EXAMPLE
 
-You would typically search a given user's charged group first:
+You would typically find out about a given user's charged groups first:
 
 .nf
 % fairshare find fred
@@ -22,10 +22,11 @@ SHARE/XX/foo/fred
 SHARE/XX/bar/fred
 .fi
 
-You could then list his share values over time for on of his give groups:
+You could then list his share values over time for one of his groups:
 
 .nf
 % fairshare shares SHARE/XX/bar/fred
+
 SHARE/XX/bar/fred:
 
     TIMESTAMP            PRIORITY    STARTED  CPU           
@@ -43,11 +44,11 @@ SHARE/XX/bar/fred:
     TIMESTAMP            PRIORITY    STARTED  CPU           
 .fi
 
-Here, the user didn't have any job dispatched until 13:50 when 6\~started. His
-priority consequently decreased and his cumulative CPU usage increased. At
-14:00, all of his jobs finished and his cumulative CPU usage, which had reached
-a certain amount, subsequently started to decrease and his priority increase
-again.
+Here, the user didn't have any jobs dispatched until 13:50 when 6\~started. His 
+priority consequently decreased and his cumulative CPU usage increased. At 
+14:00, all of his jobs finished and his cumulative CPU usage, which had reached 
+a certain amount, subsequently started to decrease and his priority increased 
+again. 
 
 .SH COMMON OPTIONS
 
@@ -75,10 +76,10 @@ Print the share values of a user's charged \fIgroup\fR over time:
 
 .TP
 \fB-r\fR, \fB--recursive
-Recursively print all the share values of the user's parent groups. Sometimes,
-users don't see their jobs dispatched not because their priority is too low,
-but because the priority of one of the groups they belong to (directly or
-indirectly). This options helps identify these cases.
+Recursively print all the share values of the user's parent groups. Sometimes, 
+users don't see their jobs dispatched not because their priority is too low, 
+but because the priority of one of the groups they belong to (directly or 
+indirectly) is too low. This options helps identify these cases. 
 
 .TP
 \fB-a \fIN\fR, \fB--ago \fIN
