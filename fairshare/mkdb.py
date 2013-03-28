@@ -6,7 +6,7 @@ import cx_Oracle
 import fairshare
 
 def mktables(args):
-    connection = fairshare.connect(args.rcfile)
+    connection = fairshare.connect(args.username, args.password, args.dsn)
     c = connection.cursor()
 
     def execcreate(cursor, sql):
@@ -65,14 +65,20 @@ END;'''
 def main():
     p = ArgumentParser(description="Modify fairshare DB",
                        formatter_class=ArgumentDefaultsHelpFormatter)
-    p.add_argument('-f', '--file', metavar='FILE', dest='rcfile',
-                   help="config file", default='/etc/fairshare')
+    p.add_argument('-u', '--username', help="username")
+    p.add_argument('-p', '--password', help="password file",
+                   default='/etc/fairshare')
+    p.add_argument('-t', '--dsn', help="DSN")
     s = p.add_subparsers()
     pmk = s.add_parser('mktables', help="Make tables")
     pmk.set_defaults(func=mktables)
     args = p.parse_args()
 
-    args.func(args)
+    try:
+        args.func(args)
+    except (IOError, cx_Oracle.DatabaseError), e:
+        print >>sys.stderr, str(e).strip()
+        return 1
 
 if __name__ == '__main__':
     sys.exit(main())

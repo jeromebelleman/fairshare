@@ -13,29 +13,20 @@ import fairshare
 PART = 'SHARE'
 USERDATALEN = 7
 
-class Stdout:
-    def write(self, s):
-        if s != '\n':
-            logging.warning(s)
+class Output:
+    def __init__(self, f):
+        self.f = f
+        self.buf = ''
 
-class Stderr:
     def write(self, s):
-        if s != '\n':
-            logging.error(s)
+        if s == '\n':
+            self.f(self.buf)
+        else:
+            self.buf += s
 
 def collect(args):
-    # Set up logging
-    logging.basicConfig(filename=args.log, level=logging.INFO,
-                        format="%(asctime)s %(levelname)s %(message)s")
-    sys.stdout = Stdout()
-    sys.stderr = Stderr()
-
     # Connect to DB
-    try:
-        connection = fairshare.connect(args.config)
-    except cx_Oracle.DatabaseError, e:
-        logging.error(str(e)[:-1])
-        return 1
+    connection = fairshare.connect(args.username, args.password, args.dsn)
     c = connection.cursor()
 
     # Run PyLSF 
@@ -110,8 +101,10 @@ END;''' % ((insert,) * 2)
 def main():
     p = ArgumentParser(description="Modify fairshare DB",
                        formatter_class=ArgumentDefaultsHelpFormatter)
-    p.add_argument('-c', '--config', help="config file",
+    p.add_argument('-u', '--username', help="username")
+    p.add_argument('-p', '--password', help="password file",
                    default='/etc/fairshare')
+    p.add_argument('-t', '--dsn', help="DSN")
     p.add_argument('-l', '--log', help="log file",
                    default='/var/log/fairshare.log')
     p.add_argument('-d', '--delete', metavar='N',
@@ -121,7 +114,18 @@ def main():
     pmk.set_defaults(func=collect)
     args = p.parse_args()
 
-    return args.func(args)
+    try:
+        # Set up logging
+        logging.basicConfig(filename=args.log, level=logging.INFO,
+                            format="%(asctime)s %(levelname)s %(message)s")
+        sys.stdout = Output(logging.warning)
+        sys.stderr = Output(logging.error)
+
+        # Run command
+        args.func(args)
+    except (IOError, cx_Oracle.DatabaseError), e:
+        logging.error(str(e).strip())
+        return 1
 
 if __name__ == '__main__':
     sys.exit(main())

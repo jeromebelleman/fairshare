@@ -13,12 +13,12 @@ COLS = { 'TIMESTAMP': 19,
          'WALL': 11,
        }
 
-def connect(config):
-    return cx_Oracle.connect(open(config).read().strip())
+def connect(username, password, dsn):
+    return cx_Oracle.connect(username, open(password).read().strip(), dsn)
 
 def find(args):
     # Connect to DB
-    connection = connect(args.config)
+    connection = connect(args.username, args.password, args.dsn)
     c = connection.cursor()
 
     # Query
@@ -29,7 +29,7 @@ def find(args):
 
 def shares(args):
     # Connect to DB
-    connection = connect(args.config)
+    connection = connect(args.username, args.password, args.dsn)
     c = connection.cursor()
 
     def findshares(c, group, ago):
@@ -78,9 +78,10 @@ def main():
     # Arguments
     p = ArgumentParser(description='Query fairshare information',
                        formatter_class=RawDescriptionHelpFormatter)
-    p.add_argument('-c', '--config', help="config file",
+    p.add_argument('-u', '--username', help="username")
+    p.add_argument('-p', '--password', help="password file",
                    default='/etc/fairshare')
-
+    p.add_argument('-t', '--dsn', help="DSN")
     s = p.add_subparsers()
 
     # Find sub-command
@@ -97,9 +98,13 @@ def main():
     psh.add_argument('-a', '--ago', metavar='N', type=int, default=2,
                      help="display share values after N hours ago")
     psh.set_defaults(func=shares)
-
     args = p.parse_args()
-    args.func(args)
+
+    try:
+        args.func(args)
+    except (IOError, cx_Oracle.DatabaseError), e:
+        print >>sys.stderr, str(e).strip()
+        return 1
 
 if __name__ == '__main__':
     sys.exit(main())
