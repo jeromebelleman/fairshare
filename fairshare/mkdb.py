@@ -2,17 +2,18 @@
 
 import sys
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-import cx_Oracle
-import fairshare
+from cx_Oracle import connect, DatabaseError
 
 def mktables(args):
-    connection = fairshare.connect(args.username, args.password, args.dsn)
+    connection = connect(args.username,
+                         open(args.password).read().strip(),
+                         args.dsn)
     c = connection.cursor()
 
     def execcreate(cursor, sql):
         try:
             cursor.execute(sql)
-        except cx_Oracle.DatabaseError, e:
+        except DatabaseError, e:
             if e.args[0].code == 955: # Object already exists
                 pass
             else:
@@ -76,7 +77,7 @@ def main():
 
     try:
         args.func(args)
-    except (IOError, cx_Oracle.DatabaseError), e:
+    except (IOError, DatabaseError), e:
         print >>sys.stderr, str(e).strip()
         return 1
 

@@ -7,8 +7,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import logging
 
 import pylsf
-import cx_Oracle
-import fairshare
+from cx_Oracle import connect, DatabaseError
 
 PART = 'SHARE'
 USERDATALEN = 7
@@ -26,7 +25,9 @@ class Output:
 
 def collect(args):
     # Connect to DB
-    connection = fairshare.connect(args.username, args.password, args.dsn)
+    connection = connect(args.username,
+                         open(args.password).read().strip(),
+                         args.dsn)
     c = connection.cursor()
 
     # Run PyLSF 
@@ -123,7 +124,7 @@ def main():
 
         # Run command
         args.func(args)
-    except (IOError, cx_Oracle.DatabaseError), e:
+    except (IOError, DatabaseError), e:
         logging.error(str(e).strip())
         return 1
 

@@ -2,7 +2,7 @@
 
 import sys
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-import cx_Oracle
+from cx_Oracle import connect, DatabaseError, CURSOR
 from datetime import datetime, timedelta
 from time import mktime
 
@@ -13,29 +13,30 @@ COLS = { 'TIMESTAMP': 19,
          'WALL': 11,
        }
 
-def connect(username, password, dsn):
-    return cx_Oracle.connect(username, open(password).read().strip(), dsn)
-
 def find(args):
     # Connect to DB
-    connection = connect(args.username, args.password, args.dsn)
+    connection = connect(args.username,
+                         open(args.password).read().strip(),
+                         args.dsn)
     c = connection.cursor()
 
     # Query
     _, usernames = c.callproc('batch_shares.findusers',
-                              (args.user, c.var(cx_Oracle.CURSOR)))
+                              (args.user, c.var(CURSOR)))
     for username, in usernames:
         print username
 
 def shares(args):
     # Connect to DB
-    connection = connect(args.username, args.password, args.dsn)
+    connection = connect(args.username,
+                         open(args.password).read().strip(),
+                         args.dsn)
     c = connection.cursor()
 
     def findshares(c, group, ago):
         _, _, shares = c.callproc('batch_shares.findshares',
                                   (group, datetime.now() - timedelta(hours=ago),
-                                   c.var(cx_Oracle.CURSOR)))
+                                   c.var(CURSOR)))
         return shares
 
     # Query
@@ -102,7 +103,7 @@ def main():
 
     try:
         args.func(args)
-    except (IOError, cx_Oracle.DatabaseError), e:
+    except (IOError, DatabaseError), e:
         print >>sys.stderr, str(e).strip()
         return 1
 
