@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import sys
+from os.path import expanduser
 from time import time
 from datetime import datetime, timedelta
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
@@ -11,6 +12,7 @@ from cx_Oracle import connect, DatabaseError
 
 PART = 'SHARE'
 USERDATALEN = 7
+DEL = 10
 
 class Output:
     def __init__(self, f):
@@ -23,11 +25,17 @@ class Output:
         else:
             self.buf += s
 
-def collect(args):
+def collect(username, password, dsn, log, delete=DEL):
+    # Set up logging
+    logging.basicConfig(filename=expanduser(log), level=logging.INFO,
+                        format="%(asctime)s %(levelname)s %(message)s")
+    sys.stdout = Output(logging.warning)
+    sys.stderr = Output(logging.error)
+
     # Connect to DB
-    connection = connect(args.username,
-                         open(args.password).read().strip(),
-                         args.dsn)
+    connection = connect(username,
+                         open(expanduser(password)).read().strip(),
+                         dsn)
     c = connection.cursor()
 
     # Run PyLSF 
@@ -90,7 +98,7 @@ END;''' % ((insert,) * 2)
     # Clean up old data
     sql = 'DELETE FROM shares WHERE timestamp < :t'
     t0 = time()
-    c.execute(sql, [datetime.now() - timedelta(args.delete)])
+    c.execute(sql, [datetime.now() - timedelta(delete)])
     logging.info("Deleted %d records from DB in %.2f s" % \
                  (c.rowcount, time() - t0))
 
@@ -109,21 +117,12 @@ def main():
     p.add_argument('-l', '--log', help="log file",
                    default='/var/log/fairshare.log')
     p.add_argument('-d', '--delete', metavar='N',
-                   help="delete data older than N days", type=int, default=10)
-    s = p.add_subparsers()
-    pmk = s.add_parser('collect', help="Collect users and their stats")
-    pmk.set_defaults(func=collect)
+                   help="delete data older than N days", type=int, default=DEL)
     args = p.parse_args()
 
     try:
-        # Set up logging
-        logging.basicConfig(filename=args.log, level=logging.INFO,
-                            format="%(asctime)s %(levelname)s %(message)s")
-        sys.stdout = Output(logging.warning)
-        sys.stderr = Output(logging.error)
-
         # Run command
-        args.func(args)
+        collect(args.username, args.password, args.dsn, args.log, args.delete)
     except (IOError, DatabaseError), e:
         logging.error(str(e).strip())
         return 1
