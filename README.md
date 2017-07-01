@@ -1,3 +1,8 @@
+Querying fairshare information, (i.e. priority, shares, job consumption)
+can be both heavy on the batch system and slow.  The `fairshare` command uses
+information collected in a fast, resilient DB to provide the same information.
+A useful tool for batch managers, Helpdesk operators and end-users alike.
+
 # NAME
 
 fairshare – Query LSF fairshare information
